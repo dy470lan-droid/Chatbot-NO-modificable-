@@ -100,6 +100,6 @@ def Respuesta_rapida(pregunta: str):
             mejor_resp = resp
 
     # Devuelve la respuesta más parecida
-    if mejor_sim >= 0:
+    if mejor_sim >= 0.9:
         return mejor_resp
     return None

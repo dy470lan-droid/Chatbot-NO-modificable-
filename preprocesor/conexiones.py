@@ -1,3 +1,7 @@
+"""Codigo para conectar el bot de Telegram con Flask y manejar preguntas frecuentes y consultas IA.
+Utilizamos ngrok para exponer el webhook públicamente.
+También vigilamos una carpeta de PDFs para procesar nuevos documentos automáticamente. """
+
 # ===================== IMPORTS =====================
 import os
 import json
@@ -12,6 +16,7 @@ from pyngrok import ngrok
 import requests
 from txt_a_qa import procesar_todos_los_pdfs
 from waitress import serve
+from faiss_obtener import Respuesta_rapida
 from principal import responder_a_consulta   # función IA para responder consultas
 
 # ===================== ARCHIVOS =====================
@@ -166,7 +171,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "No encontré preguntas para armar el menú.\n"
             "Verificá que exista alguno de estos archivos:\n"
             "• ./data/output/respuestas.json\n"
-            "• ./preguntas_respuestas.json"
         )
         return
 
@@ -192,7 +196,6 @@ async def menu_consultas(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "No encontré preguntas para armar el menú.\n"
             "Verificá que exista alguno de estos archivos:\n"
             "• ./data/output/respuestas.json\n"
-            "• ./preguntas_respuestas.json"
         )
         return
 
@@ -253,27 +256,12 @@ async def responder_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(respuesta, reply_markup=kb_preguntas(preguntas))
             return
         else:
+            respuesta=Respuesta_rapida(msg)
+            if respuesta:
+                await update.message.reply_text(respuesta, reply_markup=kb_preguntas(preguntas))
+                return
             await update.message.reply_text("Elegí una opción del menú o tocá ⬅️ Volver.", reply_markup=kb_preguntas(preguntas))
             return
-
-    # Consulta libre (IA)
-    processing_msg = await update.message.reply_text("🔄 Procesando...")
-    try:
-        loop = asyncio.get_event_loop()
-        respuesta = await loop.run_in_executor(executor, responder_a_consulta, msg)
-        guardar_respuesta(msg, respuesta)
-        await context.bot.edit_message_text(
-            chat_id=update.effective_chat.id,
-            message_id=processing_msg.message_id,
-            text=respuesta
-        )
-    except Exception as e:
-        await context.bot.edit_message_text(
-            chat_id=update.effective_chat.id,
-            message_id=processing_msg.message_id,
-            text=f"❌ Error: {e}"
-        )
-
 
 import time
 from pathlib import Path
@@ -307,7 +295,7 @@ def vigilar_pdfs(carpeta_entrada="./data/imputPDF", carpeta_salida="./data/outpu
         else:
             print("No hay PDFs nuevos. No se procesa nada.")
 
-        time.sleep(60)
+        time.sleep(6000)
 
 
 
@@ -360,4 +348,3 @@ if __name__ == "__main__":
     # Ejecutar servidor Flask principal con Waitress
     print("🚀 Servidor Flask corriendo con waitress...")
     serve(app, host="0.0.0.0", port=5000)
-

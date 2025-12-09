@@ -1,3 +1,10 @@
+"""
+Este programa se encarga de construir un índice de búsqueda semántica utilizando 
+FAISS a partir de textos almacenados en un archivo JSON, generando embeddings con un 
+modelo de Sentence Transformers y guardando el índice resultante para permitir búsquedas 
+rápidas y precisas por similitud de significado.
+"""
+
 import faiss
 import numpy as np
 import json
